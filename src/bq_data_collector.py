@@ -1,7 +1,6 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=Warning)
-from utils import cloud_constants as cc
 from utils import bq_client_helper as bq_helper
 
 import pandas as pd
