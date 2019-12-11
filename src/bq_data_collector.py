@@ -55,32 +55,32 @@ def _get_query_date_range(no_of_days):
             for dt in arrow.Arrow.range('day', START_TIME, END_TIME)]
     return LAST_N_DAYS
 
-def _get_issues_data_frame(bq_client, query_param):
-    ISSUE_QUERY = """
+def _get_gh_event_as_data_frame(bq_client, query_param):
+    EVENT_QUERY = """
     SELECT
         repo.name as repo_name,
         type as event_type,
         'golang' as ecosystem,
         JSON_EXTRACT_SCALAR(payload, '$.action') as status,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.id') as id,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.number') as number,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.url') as api_url,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.html_url') as url,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.user.login') as creator_name,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.user.html_url') as creator_url,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.created_at') as created_at,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.updated_at') as updated_at,
-        JSON_EXTRACT_SCALAR(payload, '$.issue.closed_at') as closed_at,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.id') as id,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.number') as number,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.url') as api_url,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.html_url') as url,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.user.login') as creator_name,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.user.html_url') as creator_url,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.created_at') as created_at,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.updated_at') as updated_at,
+        JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.closed_at') as closed_at,
         TRIM(REGEXP_REPLACE(
                  REGEXP_REPLACE(
-                     JSON_EXTRACT_SCALAR(payload, '$.issue.title'),
+                     JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.title'),
                      r'\\r\\n|\\r|\\n',
                      ' '),
                  r'\s{2,}',
                  ' ')) as title,
         TRIM(REGEXP_REPLACE(
                  REGEXP_REPLACE(
-                     JSON_EXTRACT_SCALAR(payload, '$.issue.body'),
+                     JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.body'),
                      r'\\r\\n|\\r|\\n',
                      ' '),
                  r'\s{2,}',
@@ -89,89 +89,55 @@ def _get_issues_data_frame(bq_client, query_param):
     FROM `githubarchive.day.{year_prefix_wildcard}`
         WHERE _TABLE_SUFFIX IN {year_suffix_month_day}
         AND repo.name in {repo_names}
-        AND type = 'IssuesEvent'
+        AND type = '{event_type}'
         """
 
-    ISSUE_QUERY = bq_helper.bq_add_query_params(ISSUE_QUERY, query_param)
-    qsize = bq_client.estimate_query_size(ISSUE_QUERY)
-    _logger.info('Retrieving GH Issues. Query cost in GB={qc}'.format(qc=qsize))
+    EVENT_QUERY = bq_helper.bq_add_query_params(EVENT_QUERY, query_param)
+    qsize = bq_client.estimate_query_size(EVENT_QUERY)
+    _logger.info('Retrieving GH Events. Query cost in GB={qc}'.format(qc=qsize))
 
-    issues_df = bq_client.query_to_pandas(ISSUE_QUERY)
-    if issues_df.empty:
-        _logger.warn('No issues present for given time duration.')
+    df = bq_client.query_to_pandas(EVENT_QUERY)
+    if df.empty:
+        _logger.warn('No Events present for given time duration.')
     else:
-        _logger.info('Total issues retrieved: {n}'.format(n=len(issues_df)))
+        _logger.info('Total Events retrieved: {n}'.format(n=len(df)))
 
-        issues_df.created_at = pd.to_datetime(issues_df.created_at)
-        issues_df.updated_at = pd.to_datetime(issues_df.updated_at)
-        issues_df.closed_at = pd.to_datetime(issues_df.closed_at)
-        issues_df = issues_df.loc[issues_df.groupby(
+        df.created_at = pd.to_datetime(df.created_at)
+        df.updated_at = pd.to_datetime(df.updated_at)
+        df.closed_at = pd.to_datetime(df.closed_at)
+        df = df.loc[df.groupby(
             'url').updated_at.idxmax(skipna=False)].reset_index(drop=True)
         _logger.info(
-                'Total issues after deduplication: {n}'.format(n=len(issues_df)))
+                'Total Events after deduplication: {n}'.format(n=len(df)))
 
+    return df
 
-    return issues_df
-
-def _get_pr_data_frame(bq_client, query_param):
-    PR_QUERY = """
-    SELECT
-        repo.name as repo_name,
-        type as event_type,
-        'golang' as ecosystem,
-        JSON_EXTRACT_SCALAR(payload, '$.action') as status,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.id') as id,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.number') as number,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.url') as api_url,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.html_url') as url,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.user.login') as creator_name,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.user.html_url') as creator_url,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.created_at') as created_at,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.updated_at') as updated_at,
-        JSON_EXTRACT_SCALAR(payload, '$.pull_request.closed_at') as closed_at,
-        TRIM(REGEXP_REPLACE(
-                 REGEXP_REPLACE(
-                     JSON_EXTRACT_SCALAR(payload, '$.pull_request.title'),
-                     r'\\r\\n|\\r|\\n',
-                     ' '),
-                 r'\s{2,}',
-                 ' ')) as title,
-        TRIM(REGEXP_REPLACE(
-                 REGEXP_REPLACE(
-                     JSON_EXTRACT_SCALAR(payload, '$.pull_request.body'),
-                     r'\\r\\n|\\r|\\n',
-                     ' '),
-                 r'\s{2,}',
-                 ' ')) as body
-
-    FROM `githubarchive.day.{year_prefix_wildcard}`
-        WHERE _TABLE_SUFFIX IN {year_suffix_month_day}
-        AND repo.name in {repo_names}
-        AND type = 'PullRequestEvent'
+def _get_gh_event_estimate(bq_client, query_param):
+    query = """
+    SELECT  type as EventType, count(*) as Freq
+            FROM `githubarchive.day.{year_prefix_wildcard}`
+            WHERE _TABLE_SUFFIX IN {year_suffix_month_day}
+            AND repo.name in {repo_names}
+            AND type in ('PullRequestEvent', 'IssuesEvent')
+            GROUP BY type
     """
+    query = bq_helper.bq_add_query_params(query, query_param)
+    return bq_client.query_to_pandas(query)
 
-    PR_QUERY = bq_helper.bq_add_query_params(PR_QUERY, query_param)
-    qsize = bq_client.estimate_query_size(PR_QUERY)
-    _logger.info(
-            'Retrieving GH Pull Requests. Query cost in GB={qc}'.format(qc=qsize))
+def _get_query_param(repos, days):
+    LAST_N_DAYS = _get_query_date_range(days)
+    REPO_NAMES = _get_repo_list(repos)
 
-    prs_df = bq_client.query_to_pandas(PR_QUERY)
-    if prs_df.empty:
-        _logger.warn('No pull requests present for given time duration.')
-    else:
-        _logger.info('Total pull requests retrieved: {n}'.format(n=len(prs_df)))
+    # Don't change this
+    YEAR_PREFIX = '20*'
+    DAY_LIST = [item[2:] for item in LAST_N_DAYS]
+    QUERY_PARAMS = {
+        '{year_prefix_wildcard}': YEAR_PREFIX,
+        '{year_suffix_month_day}': '(' + ', '.join(["'" + d + "'" for d in DAY_LIST]) + ')',
+        '{repo_names}': '(' + ', '.join(["'" + r + "'" for r in REPO_NAMES]) + ')',
+    }
+    return QUERY_PARAMS, LAST_N_DAYS
 
-        prs_df.created_at = pd.to_datetime(prs_df.created_at)
-        prs_df.updated_at = pd.to_datetime(prs_df.updated_at)
-        prs_df.closed_at = pd.to_datetime(prs_df.closed_at)
-        prs_df = prs_df.loc[prs_df.groupby('url').updated_at.idxmax(
-            skipna=False)].reset_index(drop=True)
-        _logger.info(
-                'Total pull requests after deduplication: {n}'.format(n=len(prs_df)))
-
-        _logger.info('\n')
-
-    return prs_df
 def main():
     # Initial setup no need to change anything
     parser = argparse.ArgumentParser(prog='python',
@@ -193,38 +159,9 @@ def main():
 
     args = parser.parse_args()
 
-
-
-    REPO_NAMES = _get_repo_list(args.repos)
-
-    _logger.info('\n')
-
-
-    # ======= DATES SETUP FOR GETTING GITHUB BQ DATA ========
-    _logger.info('----- DATES SETUP FOR GETTING GITHUB BQ DATA -----')
-
-    LAST_N_DAYS = _get_query_date_range(args.days_since_yday)
-    DURATION_DAYS = len(LAST_N_DAYS)
-
-    _logger.info('Data will be retrieved for Last N={n} days: {days}'.format(n=DURATION_DAYS,
+    QUERY_PARAMS, LAST_N_DAYS = _get_query_param(repos = args.repos, days=args.days_since_yday)
+    _logger.info('Data will be retrieved for Last N={n} days: {days}'.format(n=len(LAST_N_DAYS),
         days=LAST_N_DAYS))
-    _logger.info('\n')
-
-
-    # ======= BQ QUERY PARAMS SETUP FOR GETTING GITHUB BQ DATA ========
-    _logger.info('----- BQ QUERY PARAMS SETUP FOR GETTING GITHUB BQ DATA -----')
-
-    # Don't change this
-    YEAR_PREFIX = '20*'
-    DAY_LIST = [item[2:] for item in LAST_N_DAYS]
-    QUERY_PARAMS = {
-        '{year_prefix_wildcard}': YEAR_PREFIX,
-        '{year_suffix_month_day}': '(' + ', '.join(["'" + d + "'" for d in DAY_LIST]) + ')',
-        '{repo_names}': '(' + ', '.join(["'" + r + "'" for r in REPO_NAMES]) + ')',
-    }
-
-    _logger.info('\n')
-
 
     # ======= BQ CLIENT SETUP FOR GETTING GITHUB BQ DATA ========
     _logger.info('----- BQ CLIENT SETUP FOR GETTING GITHUB BQ DATA -----')
@@ -232,26 +169,19 @@ def main():
 
     # ======= BQ GET DATASET SIZE ESTIMATE ========
     _logger.info('----- BQ Dataset Size Estimate -----')
+    _logger.info('Dataset Size for Last N={n} days:-'.format(n=len(LAST_N_DAYS)))
+    _logger.info('\n{data}'.format(data=_get_gh_event_estimate(GH_BQ_CLIENT, QUERY_PARAMS)))
 
-    query = """
-    SELECT  type as EventType, count(*) as Freq
-            FROM `githubarchive.day.{year_prefix_wildcard}`
-            WHERE _TABLE_SUFFIX IN {year_suffix_month_day}
-            AND repo.name in {repo_names}
-            AND type in ('PullRequestEvent', 'IssuesEvent')
-            GROUP BY type
-    """
-    query = bq_helper.bq_add_query_params(query, QUERY_PARAMS)
-    df = GH_BQ_CLIENT.query_to_pandas(query)
-    _logger.info('Dataset Size for Last N={n} days:-'.format(n=DURATION_DAYS))
-    _logger.info('\n{data}'.format(data=df))
-
-    _logger.info('\n')
 
     # ======= BQ GITHUB DATASET RETRIEVAL & PROCESSING ========
+    # FIXME: Combine 2 queries to reduce the cost
     _logger.info('----- BQ GITHUB DATASET RETRIEVAL & PROCESSING -----')
-    issues_df = _get_issues_data_frame(GH_BQ_CLIENT, QUERY_PARAMS)
-    prs_df = _get_pr_data_frame(GH_BQ_CLIENT, QUERY_PARAMS)
+    issues_df = _get_gh_event_as_data_frame(GH_BQ_CLIENT,
+         {**QUERY_PARAMS, **{'{payload_field_name}':'issue', '{event_type}': 'IssuesEvent'}}
+    )
+    prs_df = _get_gh_event_as_data_frame(GH_BQ_CLIENT,
+         {**QUERY_PARAMS, **{'{payload_field_name}':'pull_request', '{event_type}': 'PullRequestEvent'}}
+    )
 
     _logger.info('Merging issues and pull requests datasets')
     cols = issues_df.columns
