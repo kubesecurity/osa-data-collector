@@ -2,7 +2,6 @@
 Helper class to simplify common read-only BigQuery tasks.
 """
 
-
 import pandas as pd
 import time
 
@@ -28,7 +27,7 @@ class BigQueryHelper(object):
         self.tables = dict()  # {table name (str): table object}
         self.__table_refs = dict()  # {table name (str): table reference}
         self.total_gb_used_net_cache = 0
-        self.BYTES_PER_GB = 2**30
+        self.BYTES_PER_GB = 2 ** 30
 
     def __fetch_dataset(self):
         """
@@ -56,13 +55,8 @@ class BigQueryHelper(object):
         name = row['name']
         if top_level_name != '':
             name = top_level_name + '.' + name
-        schema_details.append([{
-            'name': name,
-            'type': row['type'],
-            'mode': row['mode'],
-            'fields': pd.np.nan,
-            'description': row['description']
-                               }])
+        schema_details.append([{'name': name, 'type': row['type'], 'mode': row['mode'], 'fields': pd.np.nan,
+                                'description': row['description']}])
         # float check is to dodge row['fields'] == np.nan
         if type(row.get('fields', 0.0)) == float:
             return None
@@ -82,8 +76,7 @@ class BigQueryHelper(object):
             Dataframe of the unrolled schema.
         """
         schema_details = []
-        schema.apply(lambda row:
-            self.__handle_record_field(row, schema_details), axis=1)
+        schema.apply(lambda row: self.__handle_record_field(row, schema_details), axis=1)
         result = pd.concat([pd.DataFrame.from_dict(x) for x in schema_details])
         result.reset_index(drop=True, inplace=True)
         del result['fields']
@@ -113,7 +106,7 @@ class BigQueryHelper(object):
         List the names of the tables in a dataset
         """
         self.__fetch_dataset()
-        return([x.table_id for x in self.client.list_tables(self.dataset)])
+        return [x.table_id for x in self.client.list_tables(self.dataset)]
 
     def estimate_query_size(self, query):
         """
@@ -165,8 +158,7 @@ class BigQueryHelper(object):
         schema_subset = None
         if selected_columns:
             schema_subset = [col for col in active_table.schema if col.name in selected_columns]
-        results = self.client.list_rows(active_table, selected_fields=schema_subset,
-            max_results=num_rows, start_index=start_index)
+        results = self.client.list_rows(active_table, selected_fields=schema_subset, max_results=num_rows,
+                                        start_index=start_index)
         results = [x for x in results]
-        return pd.DataFrame(
-            data=[list(x.values()) for x in results], columns=list(results[0].keys()))
+        return pd.DataFrame(data=[list(x.values()) for x in results], columns=list(results[0].keys()))
