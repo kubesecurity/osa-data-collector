@@ -60,16 +60,17 @@ def main():
     start_time = arrow.now().shift(days=-args.days_since_yday)
     end_time = present_time.shift(days=-1)
     file_name = "gh_data_{days}.csv".format(days='-'.join([start_time.format('YYYYMMDD'), end_time.format('YYYYMMDD')]))
-    data_frame.to_csv('gh-data/{filename}'.format(filename=file_name), index=False)
+    data_frame.to_csv('/app/gh_data/{filename}'.format(filename=file_name), index=False)
 
     # ======= UPLOADING DATASETS TO S3 BUCKET ========
     _logger.info('----- UPLOADING DATASETS TO S3 BUCKET  -----')
     s3_obj = aws.S3_OBJ
-    bucket_name = cc.S3_BUCKET_NAME
+    bucket_name = cc.AWS_S3_BUCKET_NAME
     s3_bucket = s3_obj.Bucket(bucket_name)
 
     _logger.info('Uploading Github data to S3 Bucket')
-    aws.s3_upload_folder(folder_path="gh-data", s3_bucket_obj=s3_bucket)
+    aws.s3_upload_folder(folder_path="/app/gh_data", s3_bucket_obj=s3_bucket)
+    _logger.info('Upload completed')
 
 
 if __name__ == '__main__':
