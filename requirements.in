@@ -1,7 +1,8 @@
-boto3
 tqdm
 arrow
 pandas
 daiquiri
 google-cloud-bigquery
 lxml
+s3fs
+-e git+git://github.com/SohierDane/BigQuery_Helper#egg=bq_helper

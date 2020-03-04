@@ -7,7 +7,6 @@ import arrow
 import daiquiri
 import pandas as pd
 
-import src.utils.aws_utils as aws
 import src.utils.cloud_constants as cc
 from src.bq_data_collector import BigQueryDataCollector
 
@@ -28,9 +27,9 @@ def main():
                                         The -days flag should be used with number of prev days data you want to pull
                                         '''))
 
-    parser.add_argument('-eco-systems', '--eco-systems', metavar='N', type=str, nargs='+', default="openshift",
+    parser.add_argument('-e', '--eco-systems', metavar='N', type=str, nargs='+', default="openshift",
                         choices=["openshift", "knative", "kubevirt"], help="The eco-systems to monitor")
-    parser.add_argument('-days', '--days-since-yday', type=int, default=7,
+    parser.add_argument('-d', '--days-since-yday', type=int, default=7,
                         help='The number of days data to retrieve from GitHub including yesterday')
 
     args = parser.parse_args()
@@ -60,16 +59,9 @@ def main():
     start_time = arrow.now().shift(days=-args.days_since_yday)
     end_time = present_time.shift(days=-1)
     file_name = "gh_data_{days}.csv".format(days='-'.join([start_time.format('YYYYMMDD'), end_time.format('YYYYMMDD')]))
-    data_frame.to_csv('/app/gh_data/{filename}'.format(filename=file_name), index=False)
-
-    # ======= UPLOADING DATASETS TO S3 BUCKET ========
-    _logger.info('----- UPLOADING DATASETS TO S3 BUCKET  -----')
-    s3_obj = aws.S3_OBJ
-    bucket_name = cc.AWS_S3_BUCKET_NAME
-    s3_bucket = s3_obj.Bucket(bucket_name)
-
     _logger.info('Uploading Github data to S3 Bucket')
-    aws.s3_upload_folder(folder_path="/app/gh_data", s3_bucket_obj=s3_bucket)
+    data_frame.to_csv('s3://{bucket}/gh_data/{filename}'.format(bucket=cc.AWS_S3_BUCKET_NAME, filename=file_name),
+                      index=False)
     _logger.info('Upload completed')
 
 

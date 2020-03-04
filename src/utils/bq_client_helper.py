@@ -4,14 +4,14 @@ import re
 import daiquiri
 import numpy as np
 
-from src.utils import bq_utils as bqu
+from bq_helper import BigQueryHelper
 
 daiquiri.setup(level=logging.INFO)
 _logger = daiquiri.getLogger(__name__)
 
 
 def create_github_bq_client():
-    gh_archive = bqu.BigQueryHelper(active_project="githubarchive", dataset_name="day")
+    gh_archive = BigQueryHelper(active_project="githubarchive", dataset_name="day")
     _logger.info('Setting up BQ Client')
     return gh_archive
 

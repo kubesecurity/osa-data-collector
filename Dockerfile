@@ -8,15 +8,16 @@ LABEL name="osa data collector" \
       target-file="Dockerfile" \
       app-license="GPL-3.0"
 
-ADD ./requirements.txt /app/
-ADD run_data_collector.py /app/
-COPY src/ /app/src/
+ADD ./requirements.txt /
+ADD run_data_collector.py /
 
-RUN microdnf install python3 && pip3 install --upgrade pip &&\
-    pip3 install -r /app/requirements.txt && rm /app/requirements.txt
+RUN microdnf install git && microdnf install python3 && pip3 install --upgrade pip &&\
+    pip3 install -r /requirements.txt && rm /requirements.txt
 
-ADD scripts/entrypoint.sh /app/entrypoint.sh
+COPY src/ /src/
 
-RUN mkdir /app/gh_data && chmod +x /app/entrypoint.sh
+ADD scripts/entrypoint.sh /entrypoint.sh
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

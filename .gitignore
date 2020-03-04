@@ -114,3 +114,4 @@ triaged_datasets/
 
 # model assets
 model_assets/
+/src/bq-helper/

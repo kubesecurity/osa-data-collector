@@ -76,6 +76,7 @@ class BigQueryDataCollector:
         last_n_days = [dt.format('YYYYMMDD') for dt in arrow.Arrow.range('day', start_time, end_time)]
         return last_n_days
 
+    # TODO - We are hardcoding 'golang' as ecosystem, need to get actual ecosystem we are querying with each row
     def _get_gh_event_as_data_frame(self, query_param: Dict) -> pd.DataFrame:
         event_query = r"""
         SELECT
