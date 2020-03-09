@@ -64,9 +64,8 @@ def main():
 def save_data_to_object_store(data_frame, days_since_yday):
     """
     Savethe github data to object s3 store
-    :param data_frame:
-    :param days_since_yday:
-    :return:
+    :param data_frame: panda dataframe that has github data
+    :param days_since_yday: no of days we given in argument
     """
     present_time = arrow.now()
     start_time = arrow.now().shift(days=-days_since_yday)

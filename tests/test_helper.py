@@ -1,4 +1,4 @@
-import os;
+import os
 
 import src.utils.bq_client_helper as bq_client_helper
 
