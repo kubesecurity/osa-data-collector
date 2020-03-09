@@ -55,13 +55,29 @@ def main():
     data_frame = pd.concat([issues_df, prs_df], axis=0, sort=False, ignore_index=True).reset_index(drop=True)
     data_frame = data_frame[cols]
 
+    if data_frame.empty:
+        _logger.warn('Nothing to save')
+    else:
+        save_data_to_object_store(data_frame, args.days_since_yday)
+
+
+def save_data_to_object_store(data_frame, days_since_yday):
+    """
+    Savethe github data to object s3 store
+    :param data_frame:
+    :param days_since_yday:
+    :return:
+    """
     present_time = arrow.now()
-    start_time = arrow.now().shift(days=-args.days_since_yday)
+    start_time = arrow.now().shift(days=-days_since_yday)
     end_time = present_time.shift(days=-1)
     file_name = "gh_data_{days}.csv".format(days='-'.join([start_time.format('YYYYMMDD'), end_time.format('YYYYMMDD')]))
     _logger.info('Uploading Github data to S3 Bucket')
-    data_frame.to_csv('s3://{bucket}/gh_data/{filename}'.format(bucket=cc.AWS_S3_BUCKET_NAME, filename=file_name),
-                      index=False)
+    try:
+        data_frame.to_csv('s3://{bucket}/gh_data/{filename}'
+                          .format(bucket=cc.AWS_S3_BUCKET_NAME, filename=file_name), index=False)
+    except Exception as ex:
+        _logger.error("Exception occurred while saving data to object store. Msg: {msg}".format(msg=ex))
     _logger.info('Upload completed')
 
 

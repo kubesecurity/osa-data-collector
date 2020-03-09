@@ -4,10 +4,8 @@ Note: Please don't add keys directly here, refer to environment variables
 """
 import os
 
-# Please make sure you have your AWS envt variables setup
-AWS_S3_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_S3_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME', '')
+# Please AWS Bucket that you want to use to store data-collector program output.
+AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME', 'rzalavad-data-collector')
 
 # Please set the following to point to your BQ auth credentials JSON
 BIGQUERY_CREDENTIALS_FILEPATH = os.environ.get('BIGQUERY_CREDENTIALS_FILEPATH', '../../auth/bq_key.json')

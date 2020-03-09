@@ -9,7 +9,7 @@ import daiquiri
 import pandas as pd
 import src.utils.cloud_constants as cc
 
-from src.utils import bq_client_helper as bq_helper
+from src.utils import bq_client_helper
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=Warning)
@@ -27,7 +27,8 @@ class BigQueryDataCollector:
     def _get_repo_list(cls, eco_systems: str) -> List[str]:
         repo_names = list()
         for eco_system in eco_systems:
-            repo_names.append(bq_helper.get_gokube_trackable_repos(repo_dir=BigQueryDataCollector.
+            print(eco_system)
+            repo_names.append(bq_client_helper.get_gokube_trackable_repos(repo_dir=BigQueryDataCollector.
                                                                    _get_repo_url(eco_system)))
         return list(itertools.chain(*repo_names))
 
@@ -47,7 +48,7 @@ class BigQueryDataCollector:
     def _get_bq_client(cls, bq_credentials_path):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS',
                                                                       bq_credentials_path or '')
-        return bq_helper.create_github_bq_client()
+        return bq_client_helper.create_github_bq_client()
 
     @classmethod
     def _get_query_date_range(cls, no_of_days) -> List[str]:
@@ -76,7 +77,7 @@ class BigQueryDataCollector:
         last_n_days = [dt.format('YYYYMMDD') for dt in arrow.Arrow.range('day', start_time, end_time)]
         return last_n_days
 
-    # TODO - We are hardcoding 'golang' as ecosystem, need to get actual ecosystem we are querying with each row
+    # TODO - We are hardcoding 'golang' as ecosystem, need to figure out how we can set differnt eco systems
     def _get_gh_event_as_data_frame(self, query_param: Dict) -> pd.DataFrame:
         event_query = r"""
         SELECT
@@ -114,9 +115,10 @@ class BigQueryDataCollector:
             AND type = '{event_type}'
             """
 
+        _logger.debug("Query: {qry}".format(qry=event_query))
         _logger.info('Event type: {event_type}'.format(event_type=query_param['{event_type}']))
 
-        event_query = bq_helper.bq_add_query_params(event_query, query_param)
+        event_query = bq_client_helper.bq_add_query_params(event_query, query_param)
         qsize = self._bq_client.estimate_query_size(event_query)
         _logger.info('Retrieving GH Events. Query cost in GB={qc}'.format(qc=qsize))
 
@@ -158,7 +160,7 @@ class BigQueryDataCollector:
                 AND type in ('PullRequestEvent', 'IssuesEvent')
                 GROUP BY type
         """
-        query = bq_helper.bq_add_query_params(query, self._query_params)
+        query = bq_client_helper.bq_add_query_params(query, self._query_params)
         return self._bq_client.query_to_pandas(query)
 
     def get_issues_as_data_frame(self) -> pd.DataFrame:

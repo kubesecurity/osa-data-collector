@@ -1,0 +1,33 @@
+SELECT
+    repo.name as repo_name,
+    type as event_type,
+    'golang' as ecosystem,
+    JSON_EXTRACT_SCALAR(payload, '$.action') as status,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.id') as id,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.number') as number,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.url') as api_url,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.html_url') as url,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.user.login') as creator_name,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.user.html_url') as creator_url,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.created_at') as created_at,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.updated_at') as updated_at,
+    JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.closed_at') as closed_at,
+    TRIM(REGEXP_REPLACE(
+             REGEXP_REPLACE(
+                 JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.title'),
+                 r'\r\n|\r|\n',
+                 ' '),
+             r'\s{2,}',
+             ' ')) as title,
+    TRIM(REGEXP_REPLACE(
+             REGEXP_REPLACE(
+                 JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.body'),
+                 r'\r\n|\r|\n',
+                 ' '),
+             r'\s{2,}',
+             ' ')) as body
+
+FROM `githubarchive.day.{year_prefix_wildcard}`
+    WHERE _TABLE_SUFFIX IN {year_suffix_month_day}
+    AND repo.name in {repo_names}
+    AND type = '{event_type}'

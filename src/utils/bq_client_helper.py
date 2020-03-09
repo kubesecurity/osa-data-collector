@@ -17,14 +17,15 @@ def create_github_bq_client():
 
 
 def get_gokube_trackable_repos(repo_dir):
-    gh_repo_links = open(repo_dir).readlines()
-    gh_repo_links = np.array([item.strip('\n').strip() for item in gh_repo_links])
+    with open(repo_dir) as file:
+        gh_repo_links = file.readlines()
+        gh_repo_links = np.array([item.strip('\n').strip() for item in gh_repo_links])
 
-    pattern = re.compile(r'.*?github.com/(.*)', re.I)
-    repo_names = np.array(
-        list(filter(None, [pattern.search(item).group(1) if pattern.search(item) else None for item in gh_repo_links])))
-    _logger.info('Total Repos to Track: {repos}'.format(repos=len(repo_names)))
-    return repo_names
+        pattern = re.compile(r'.*?github.com/(.*)', re.I)
+        repo_names = np.array(
+            list(filter(None, [pattern.search(item).group(1) if pattern.search(item) else None for item in gh_repo_links])))
+        _logger.info('Total Repos to Track: {repos}'.format(repos=len(repo_names)))
+        return repo_names
 
 
 def bq_add_query_params(query, params_dict):
