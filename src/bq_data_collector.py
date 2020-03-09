@@ -19,17 +19,17 @@ _logger = daiquiri.getLogger(__name__)
 
 
 class BigQueryDataCollector:
-    def __init__(self, repos: str, bq_credentials_path: str = '', days: int = 3):
+    def __init__(self, repos: List[str], bq_credentials_path: str = '', days: int = 3):
         self._bq_client = BigQueryDataCollector._get_bq_client(bq_credentials_path)
         self._init_query_param(repos, days)
 
     @classmethod
-    def _get_repo_list(cls, eco_systems: str) -> List[str]:
+    def _get_repo_list(cls, eco_systems: List[str]) -> List[str]:
         repo_names = list()
         for eco_system in eco_systems:
             print(eco_system)
-            repo_names.append(bq_client_helper.get_gokube_trackable_repos(repo_dir=BigQueryDataCollector.
-                                                                   _get_repo_url(eco_system)))
+            repo_names.append(
+                bq_client_helper.get_gokube_trackable_repos(repo_dir=BigQueryDataCollector._get_repo_url(eco_system)))
         return list(itertools.chain(*repo_names))
 
     @classmethod
@@ -131,12 +131,13 @@ class BigQueryDataCollector:
             df.created_at = pd.to_datetime(df.created_at)
             df.updated_at = pd.to_datetime(df.updated_at)
             df.closed_at = pd.to_datetime(df.closed_at)
+            # From the duplicate records based on url take the last updated record.
             df = df.loc[df.groupby('url').updated_at.idxmax(skipna=False)].reset_index(drop=True)
             _logger.info('Total Events after deduplication: {n}'.format(n=len(df)))
 
         return df
 
-    def _init_query_param(self, eco_systems: str, days: int) -> None:
+    def _init_query_param(self, eco_systems: List[str], days: int) -> None:
         last_n_days = BigQueryDataCollector._get_query_date_range(days)
         repo_names = BigQueryDataCollector._get_repo_list(eco_systems)
 
