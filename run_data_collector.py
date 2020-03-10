@@ -3,9 +3,7 @@ import logging
 import textwrap
 import warnings
 
-import arrow
 import daiquiri
-import pandas as pd
 
 import src.utils.cloud_constants as cc
 from src.bq_data_collector import BigQueryDataCollector
@@ -45,39 +43,9 @@ def main():
     _logger.info('\n{data}'.format(data=bq_data_collector.get_gh_event_estimate()))
 
     # ======= BQ GITHUB DATASET RETRIEVAL & PROCESSING ========
-    # (fixme) Combine 2 queries to reduce the cost
     _logger.info('----- BQ GITHUB DATASET RETRIEVAL & PROCESSING -----')
-    issues_df = bq_data_collector.get_issues_as_data_frame()
-    prs_df = bq_data_collector.get_prs_as_data_frame()
-
-    _logger.info('Merging issues and pull requests datasets')
-    cols = issues_df.columns
-    data_frame = pd.concat([issues_df, prs_df], axis=0, sort=False, ignore_index=True).reset_index(drop=True)
-    data_frame = data_frame[cols]
-
-    if data_frame.empty:
-        _logger.warn('Nothing to save')
-    else:
-        save_data_to_object_store(data_frame, args.days_since_yday)
-
-
-def save_data_to_object_store(data_frame, days_since_yday):
-    """
-    Savethe github data to object s3 store
-    :param data_frame: panda dataframe that has github data
-    :param days_since_yday: no of days we given in argument
-    """
-    present_time = arrow.now()
-    start_time = arrow.now().shift(days=-days_since_yday)
-    end_time = present_time.shift(days=-1)
-    file_name = "gh_data_{days}.csv".format(days='-'.join([start_time.format('YYYYMMDD'), end_time.format('YYYYMMDD')]))
-    _logger.info('Uploading Github data to S3 Bucket')
-    try:
-        data_frame.to_csv('s3://{bucket}/gh_data/{filename}'
-                          .format(bucket=cc.AWS_S3_BUCKET_NAME, filename=file_name), index=False)
-    except Exception as ex:
-        _logger.error("Exception occurred while saving data to object store. Msg: {msg}".format(msg=ex))
-    _logger.info('Upload completed')
+    data_frame = bq_data_collector.get_github_data()
+    bq_data_collector.save_data_to_object_store(data_frame, args.days_since_yday)
 
 
 if __name__ == '__main__':

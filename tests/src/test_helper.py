@@ -5,12 +5,12 @@ import src.utils.bq_client_helper as bq_client_helper
 
 def get_file_absolute_path(relative_path):
     working_dir = os.path.abspath(os.getcwd())
-    absolute_file_path = "{dir}{relative_path}".format(dir=working_dir, relative_path=relative_path)
+    absolute_file_path = os.path.join(working_dir, relative_path)
     return absolute_file_path
 
 
 def get_sample_repo_names():
-    sample_file_path = get_file_absolute_path("/tests/utils/data_assets/sample-repo-list.txt")
+    sample_file_path = get_file_absolute_path("tests/src/utils/data_assets/golang-repo-list.txt")
     repo_names = bq_client_helper.get_gokube_trackable_repos(sample_file_path)
     return repo_names
 

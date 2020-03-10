@@ -1,0 +1,2 @@
+	github.com/elazarl/goproxy
+	github.com/Shopify/sarama

@@ -1,10 +1,8 @@
-import os
 import unittest
 from unittest.mock import patch
 
 import src.utils.bq_client_helper as bq_client_helper
-
-import tests.test_helper as test_helper
+import tests.src.test_helper as test_helper
 
 
 class BigQueryClientHelperTestCase(unittest.TestCase):
@@ -21,11 +19,8 @@ class BigQueryClientHelperTestCase(unittest.TestCase):
 
     def test_bq_add_query_params(self):
         # Get raw qyery and expected query text from the file.
-        working_dir = os.path.abspath(os.getcwd())
-        file_path = "{dir}/tests/utils/data_assets/raw-event-query.txt".format(dir=working_dir)
-        raw_event_query = test_helper.read_file_data(file_path)
-        file_path = "{dir}/tests/utils/data_assets/formatted-event-query.txt".format(dir=working_dir)
-        expected_event_query = test_helper.read_file_data(file_path)
+        raw_event_query = test_helper.read_file_data('tests/src/utils/data_assets/raw-event-query.txt')
+        expected_event_query = test_helper.read_file_data('tests/src/utils/data_assets/formatted-event-query.txt')
 
         # get sample query params
         query_params = test_helper.get_sample_query_param()

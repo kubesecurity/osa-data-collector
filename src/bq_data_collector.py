@@ -7,8 +7,8 @@ from typing import List, Dict
 import arrow
 import daiquiri
 import pandas as pd
-import src.utils.cloud_constants as cc
 
+import src.utils.cloud_constants as cc
 from src.utils import bq_client_helper
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -21,19 +21,28 @@ _logger = daiquiri.getLogger(__name__)
 class BigQueryDataCollector:
     def __init__(self, repos: List[str], bq_credentials_path: str = '', days: int = 3):
         self._bq_client = BigQueryDataCollector._get_bq_client(bq_credentials_path)
+        self._golang_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.GOKUBE_REPO_LIST)
+        self._knative_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.KNATIVE_REPO_LIST)
+        self._kubevirt_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.KUBEVIRT_REPO_LIST)
         self._init_query_param(repos, days)
 
-    @classmethod
-    def _get_repo_list(cls, eco_systems: List[str]) -> List[str]:
+    def _get_repo_by_eco_system(self, eco_system: str) -> List[str]:
+        if eco_system == 'openshift':
+            return self._golang_repo
+        elif eco_system == 'knative':
+            return self._knative_repo
+        elif eco_system == 'kubevirt':
+            return self._kubevirt_repo
+
+    def _get_repo_list(self, eco_systems: List[str]) -> List[str]:
         repo_names = list()
         for eco_system in eco_systems:
             print(eco_system)
-            repo_names.append(
-                bq_client_helper.get_gokube_trackable_repos(repo_dir=BigQueryDataCollector._get_repo_url(eco_system)))
+            repo_names.append(self._get_repo_by_eco_system(eco_system))
         return list(itertools.chain(*repo_names))
 
-    @classmethod
-    def _get_repo_url(cls, eco_system: str) -> str:
+    @staticmethod
+    def _get_repo_url(eco_system: str) -> str:
         repo_list_url = None
         _logger.info("Eco-System to Track {eco}".format(eco=eco_system))
         if eco_system == 'openshift':
@@ -50,8 +59,8 @@ class BigQueryDataCollector:
                                                                       bq_credentials_path or '')
         return bq_client_helper.create_github_bq_client()
 
-    @classmethod
-    def _get_query_date_range(cls, no_of_days) -> List[str]:
+    @staticmethod
+    def _get_query_date_range(no_of_days):
         # Don't change this
         present_time = arrow.now()
 
@@ -75,7 +84,7 @@ class BigQueryDataCollector:
         end_time = present_time.shift(days=-1)
 
         last_n_days = [dt.format('YYYYMMDD') for dt in arrow.Arrow.range('day', start_time, end_time)]
-        return last_n_days
+        return last_n_days, start_time, end_time
 
     # TODO - We are hardcoding 'golang' as ecosystem, need to figure out how we can set differnt eco systems
     def _get_gh_event_as_data_frame(self, query_param: Dict) -> pd.DataFrame:
@@ -83,7 +92,6 @@ class BigQueryDataCollector:
         SELECT
             repo.name as repo_name,
             type as event_type,
-            'golang' as ecosystem,
             JSON_EXTRACT_SCALAR(payload, '$.action') as status,
             JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.id') as id,
             JSON_EXTRACT_SCALAR(payload, '$.{payload_field_name}.number') as number,
@@ -138,8 +146,8 @@ class BigQueryDataCollector:
         return df
 
     def _init_query_param(self, eco_systems: List[str], days: int) -> None:
-        last_n_days = BigQueryDataCollector._get_query_date_range(days)
-        repo_names = BigQueryDataCollector._get_repo_list(eco_systems)
+        last_n_days = self._get_query_date_range(days)[0]
+        repo_names = self._get_repo_list(eco_systems)
 
         # Don't change this
         year_prefix = '20*'
@@ -177,6 +185,59 @@ class BigQueryDataCollector:
         """
         return self._get_gh_event_as_data_frame(
             {**self._query_params, **{'{payload_field_name}': 'pull_request', '{event_type}': 'PullRequestEvent'}})
+
+    def get_github_data(self) -> pd.DataFrame:
+        """
+        Retrives GH Issues and PRs and merge it into single dataframe
+        """
+        issues_df = self.get_issues_as_data_frame()
+        prs_df = self.get_prs_as_data_frame()
+
+        _logger.info('Merging issues and pull requests datasets')
+        cols = issues_df.columns
+        data_frame = pd.concat([issues_df, prs_df], axis=0, sort=False, ignore_index=True).reset_index(drop=True)
+        data_frame = data_frame[cols]
+
+        # update eco-system
+        if not data_frame.empty:
+            _logger.info('Updating eco-system')
+            data_frame['ecosystem'] = data_frame.apply(lambda x: self._update_eco_system(x['repo_name']),
+                                                       axis=1)
+
+        return data_frame
+
+    def _update_eco_system(self, repo_name):
+        """
+        Update ecosystem based on repo_name
+        """
+        if repo_name in self._golang_repo:
+            return 'golang'
+        elif repo_name in self._knative_repo:
+            return 'knative'
+        elif repo_name in self._kubevirt_repo:
+            return 'kubevirt'
+        else:
+            return None
+
+    def save_data_to_object_store(self, data_frame, days_since_yday):
+        """
+        Save the github data to object s3 store
+        """
+        if data_frame.empty:
+            _logger.warn('Nothing to save')
+        else:
+
+            last_n_days, start_time, end_time = self._get_query_date_range(days_since_yday)
+            file_name = "gh_data_{days}.csv".format(
+                days='-'.join([start_time.format('YYYYMMDD'), end_time.format('YYYYMMDD')]))
+            _logger.info('Uploading Github data to S3 Bucket')
+            try:
+                data_frame.to_csv(
+                    's3://{bucket}/gh_data/{filename}'.format(bucket=cc.AWS_S3_BUCKET_NAME, filename=file_name),
+                    index=False)
+            except Exception as ex:
+                _logger.error("Exception occurred while saving data to object store. Msg: {msg}".format(msg=ex))
+            _logger.info('Upload completed')
 
     @property
     def last_n_days(self):
