@@ -29,5 +29,5 @@ SELECT
 
 FROM `githubarchive.day.20*`
     WHERE _TABLE_SUFFIX IN ('200303', '200304')
-    AND repo.name in ('urfave/cli', 'mreiferson/go-httpclient')
+    AND repo.name in ('apache/thrift', 'square/go-jose')
     AND type = 'IssuesEvent'

@@ -116,3 +116,12 @@ Command contains two parameters.
 * -e : The eco-systems to monitor. Options available for now  are [openshift knative kubevirt]
 * -d : The number of days data to retrieve from GitHub including yesterday
 
+### Run Unit Test Cases
+Written unit test cases which uses 'unittest' module. You can run all unit test cases by running following command. 
+```bash
+python -m unittest discover
+```
+If you want to run test case for a single file, you can do something like below example.
+```bash
+python -m unittest tests/src/utils/test_bq_client_helper.py 
+```

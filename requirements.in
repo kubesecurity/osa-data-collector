@@ -5,4 +5,4 @@ daiquiri
 google-cloud-bigquery
 lxml
 s3fs
--e git+git://github.com/SohierDane/BigQuery_Helper#egg=bq_helper
+-e git+git://github.com/SohierDane/BigQuery_Helper.git@8615a7f6c1663e7f2d48aa2b32c2dbcb600a440f#egg=bq_helper

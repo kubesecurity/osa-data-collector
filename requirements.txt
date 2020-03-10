@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
--e git+git://github.com/SohierDane/BigQuery_Helper#egg=bq_helper  # via -r requirements.in
+-e git+git://github.com/SohierDane/BigQuery_Helper.git@8615a7f6c1663e7f2d48aa2b32c2dbcb600a440f#egg=bq_helper  # via -r requirements.in
 arrow==0.15.5             # via -r requirements.in
 boto3==1.10.35            # via s3fs
 botocore==1.13.35         # via boto3, s3fs, s3transfer
