@@ -210,14 +210,14 @@ class BigQueryDataCollector:
         """
         Update ecosystem based on repo_name
         """
+        eco_system = []
         if repo_name in self._golang_repo:
-            return 'golang'
-        elif repo_name in self._knative_repo:
-            return 'knative'
-        elif repo_name in self._kubevirt_repo:
-            return 'kubevirt'
-        else:
-            return None
+            eco_system.append('golang')
+        if repo_name in self._knative_repo:
+            eco_system.append('knative')
+        if repo_name in self._kubevirt_repo:
+            eco_system.append('kubevirt')
+        return ",".join(eco_system)
 
     def save_data_to_object_store(self, data_frame, days_since_yday):
         """

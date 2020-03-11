@@ -14,8 +14,8 @@ class BigQueryClientHelperTestCase(unittest.TestCase):
 
     def test_get_gokube_trackable_repos(self):
         repo_names = test_helper.get_sample_repo_names()
-        # As we have given 2 repo url as invalid out of 4 repo url, it should return 2 valid repo names
-        self.assertEqual(len(repo_names), 2)
+        # As we have given 2 repo url as invalid out of 5 repo url, it should return 3 valid repo names
+        self.assertEqual(len(repo_names), 3)
 
     def test_bq_add_query_params(self):
         # Get raw qyery and expected query text from the file.

@@ -29,9 +29,9 @@ class BigDataCollectorTestCase(unittest.TestCase):
         self.assertEqual(6, len(df))
 
         # assert ecosystem updation based on repo_names
-        self.assertEqual(2, len(df[df.ecosystem.eq('golang')]))
-        self.assertEqual(3, len(df[df.ecosystem.eq('knative')]))
-        self.assertEqual(1, len(df[df.ecosystem.eq('kubevirt')]))
+        self.assertEqual(4, len(df[df.ecosystem.str.contains("golang")]))
+        self.assertEqual(3, len(df[df.ecosystem.str.contains("knative")]))
+        self.assertEqual(1, len(df[df.ecosystem.str.contains("kubevirt")]))
 
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
     @patch('src.bq_data_collector.BigQueryDataCollector.get_issues_as_data_frame',
@@ -79,8 +79,8 @@ class BigDataCollectorTestCase(unittest.TestCase):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
                                                   repos=["openshift"], days=2)
         repo_list = bq_data_collector._get_repo_by_eco_system('openshift')
-        # as 2 repo url are invalid inside golang-repo-list.txt file, we will get 2 valid url out of 4 total url
-        self.assertEqual(2, len(repo_list))
+        # as 2 repo url are invalid inside golang-repo-list.txt file, we will get 2 valid url out of 5 total url
+        self.assertEqual(3, len(repo_list))
 
         knative_repo_list = bq_data_collector._get_repo_by_eco_system('knative')
         self.assertEqual(3, len(knative_repo_list))
@@ -101,6 +101,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
         day_list = '(' + ', '.join(["'" + d + "'" for d in [item[2:] for item in last_n_days]]) + ')'
         # test init logic by comparing _last_n_days and _query_params
         self.assertEqual(2, len(bq_data_collector._last_n_days))
-        self.assertEqual(bq_data_collector._query_params['{repo_names}'], "('apache/thrift', 'square/go-jose')")
+        self.assertEqual(bq_data_collector._query_params['{repo_names}'],
+                         "('apache/thrift', 'square/go-jose', 'golang/go')")
         self.assertEqual(bq_data_collector._query_params['{year_prefix_wildcard}'], '20*')
         self.assertEqual(bq_data_collector._query_params['{year_suffix_month_day}'], day_list)
