@@ -1,5 +1,0 @@
-https://github.com/apache/thrift
-https://github.com/square/go-jose
-https://github.com/golang/go
-https://invalid.com/crewjam/rfc5424
-https://abc.com/xyz

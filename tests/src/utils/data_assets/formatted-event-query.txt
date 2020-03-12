@@ -1,7 +1,6 @@
 SELECT
     repo.name as repo_name,
     type as event_type,
-    'golang' as ecosystem,
     JSON_EXTRACT_SCALAR(payload, '$.action') as status,
     JSON_EXTRACT_SCALAR(payload, '$.issue.id') as id,
     JSON_EXTRACT_SCALAR(payload, '$.issue.number') as number,

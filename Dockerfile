@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 
 LABEL name="osa data collector" \
-      description="Worker that collects data from github repo based by using bigquery" \
+      description="Worker that collects data from github repo by using bigquery" \
       email-ids="rzalavad@redhat.com" \
       git-url="https://github.com/kubesecurity/osa-data-collector.git" \
       git-path="/" \

@@ -10,6 +10,5 @@ AWS_S3_BUCKET_NAME = os.environ.get('AWS_S3_BUCKET_NAME', 'rzalavad-data-collect
 # Please set the following to point to your BQ auth credentials JSON
 BIGQUERY_CREDENTIALS_FILEPATH = os.environ.get('BIGQUERY_CREDENTIALS_FILEPATH', '../../auth/bq_key.json')
 
-GOKUBE_REPO_LIST = os.environ.get('GOKUBE_REPO_LIST', 'src/utils/data_assets/golang-repo-list.txt')
-KNATIVE_REPO_LIST = os.environ.get('KNATIVE_REPO_LIST', 'src/utils/data_assets/knative-repo-list.txt')
-KUBEVIRT_REPO_LIST = os.environ.get('KUBEVIRT_REPO_LIST', 'src/utils/data_assets/kubevirt-repo-list.txt')
+# File contains repo list for each eco-system
+REPO_LIST = os.environ.get('REPO_LIST', 'src/utils/data_assets/repo-list.json')

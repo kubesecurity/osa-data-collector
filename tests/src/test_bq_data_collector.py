@@ -9,9 +9,7 @@ import tests.src.test_helper as test_helper
 from src.bq_data_collector import BigQueryDataCollector
 
 
-@patch("src.utils.cloud_constants.GOKUBE_REPO_LIST", 'tests/src/utils/data_assets/golang-repo-list.txt')
-@patch("src.utils.cloud_constants.KNATIVE_REPO_LIST", 'tests/src/utils/data_assets/knative-repo-list.txt')
-@patch("src.utils.cloud_constants.KUBEVIRT_REPO_LIST", 'tests/src/utils/data_assets/kubevirt-repo-list.txt')
+@patch("src.utils.cloud_constants.REPO_LIST", 'tests/src/utils/data_assets/repo-list.json')
 class BigDataCollectorTestCase(unittest.TestCase):
 
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
@@ -21,7 +19,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
            return_value=pd.read_csv('tests/src/utils/data_assets/sample_gh_pr_data.csv'))
     def test_get_github_data(self, _mock_bq_client, _mock_issue, _mock_prs):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
-                                                  repos=["openshift"], days=2)
+                                                  repos=["openshift", "knative", "kubevirt"], days=2)
 
         df = bq_data_collector.get_github_data()
 
@@ -29,7 +27,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
         self.assertEqual(6, len(df))
 
         # assert ecosystem updation based on repo_names
-        self.assertEqual(4, len(df[df.ecosystem.str.contains("golang")]))
+        self.assertEqual(4, len(df[df.ecosystem.str.contains("openshift")]))
         self.assertEqual(3, len(df[df.ecosystem.str.contains("knative")]))
         self.assertEqual(1, len(df[df.ecosystem.str.contains("kubevirt")]))
 
@@ -66,20 +64,12 @@ class BigDataCollectorTestCase(unittest.TestCase):
         # taking one with latest updated time
         self.assertEqual(1, len(df[df.url.eq('https://github.com/golang/go/issues/33041')]))
 
-    def test_get_repo_url(self):
-        openshift_repo_url = BigQueryDataCollector._get_repo_url('openshift')
-        self.assertEqual(openshift_repo_url, 'tests/src/utils/data_assets/golang-repo-list.txt')
-        openshift_repo_url = BigQueryDataCollector._get_repo_url('knative')
-        self.assertEqual(openshift_repo_url, 'tests/src/utils/data_assets/knative-repo-list.txt')
-        openshift_repo_url = BigQueryDataCollector._get_repo_url('kubevirt')
-        self.assertEqual(openshift_repo_url, 'tests/src/utils/data_assets/kubevirt-repo-list.txt')
-
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
     def test_get_repo_by_list(self, _mock_bq_client):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
                                                   repos=["openshift"], days=2)
         repo_list = bq_data_collector._get_repo_by_eco_system('openshift')
-        # as 2 repo url are invalid inside golang-repo-list.txt file, we will get 2 valid url out of 5 total url
+        # as 2 repo url are invalid inside for openshift repos, we will get 2 valid url out of 5 total url
         self.assertEqual(3, len(repo_list))
 
         knative_repo_list = bq_data_collector._get_repo_by_eco_system('knative')
@@ -87,10 +77,16 @@ class BigDataCollectorTestCase(unittest.TestCase):
         kubevirt_repo_list = bq_data_collector._get_repo_by_eco_system('kubevirt')
         self.assertEqual(2, len(kubevirt_repo_list))
 
-    @patch('src.bq_data_collector.BigQueryDataCollector._get_repo_url',
-           return_value=test_helper.get_file_absolute_path("/tests/src/utils/data_assets/golang-repo-list.txt"))
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
-    def test_init_query_param(self, _mock_repo_url, _mock_bq_client):
+    def test_get_repo_by_eco_system_invalid_name(self, _mock_bq_client):
+        bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repos=["openshift"], days=2)
+
+        repo = bq_data_collector._get_repo_by_eco_system('invalid-repo')
+        self.assertEqual(0, len(repo))
+
+    @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
+    def test_init_query_param(self, _mock_bq_client):
         no_of_days = 2
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
                                                   repos=["openshift"], days=no_of_days)

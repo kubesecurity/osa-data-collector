@@ -5,6 +5,7 @@ import src.utils.bq_client_helper as bq_client_helper
 import tests.src.test_helper as test_helper
 
 
+@patch("src.utils.cloud_constants.REPO_LIST", 'tests/src/utils/data_assets/repo-list.json')
 class BigQueryClientHelperTestCase(unittest.TestCase):
 
     @patch('src.utils.bq_client_helper.create_github_bq_client')
@@ -12,7 +13,7 @@ class BigQueryClientHelperTestCase(unittest.TestCase):
         heper = bq_client_helper.create_github_bq_client()
         self.assertIsNotNone(heper)
 
-    def test_get_gokube_trackable_repos(self):
+    def test_get_repos_names(self):
         repo_names = test_helper.get_sample_repo_names()
         # As we have given 2 repo url as invalid out of 5 repo url, it should return 3 valid repo names
         self.assertEqual(len(repo_names), 3)

@@ -21,46 +21,44 @@ _logger = daiquiri.getLogger(__name__)
 class BigQueryDataCollector:
     def __init__(self, repos: List[str], bq_credentials_path: str = '', days: int = 3):
         self._bq_client = BigQueryDataCollector._get_bq_client(bq_credentials_path)
-        self._golang_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.GOKUBE_REPO_LIST)
-        self._knative_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.KNATIVE_REPO_LIST)
-        self._kubevirt_repo = bq_client_helper.get_gokube_trackable_repos(repo_dir=cc.KUBEVIRT_REPO_LIST)
+        self._repo_list = bq_client_helper.get_eco_system_with_repo_list()
         self._init_query_param(repos, days)
 
     def _get_repo_by_eco_system(self, eco_system: str) -> List[str]:
-        if eco_system == 'openshift':
-            return self._golang_repo
-        elif eco_system == 'knative':
-            return self._knative_repo
-        elif eco_system == 'kubevirt':
-            return self._kubevirt_repo
+        """
+        Get repo names based on eco-system
+        """
+        if any(x['eco-system'] == eco_system for x in self._repo_list):
+            return next(obj for obj in self._repo_list if obj['eco-system'] == eco_system)['repo-names']
+        else:
+            msg = 'Given eco-system "{eco}" is not supported'.format(eco=eco_system)
+            _logger.error(msg)
+            return []
 
     def _get_repo_list(self, eco_systems: List[str]) -> List[str]:
+        """
+        Get Repo list based on eco system passed
+        """
         repo_names = list()
         for eco_system in eco_systems:
-            print(eco_system)
+            _logger.info("Ecosystem to track: {eco}".format(eco=eco_system))
             repo_names.append(self._get_repo_by_eco_system(eco_system))
         return list(itertools.chain(*repo_names))
 
-    @staticmethod
-    def _get_repo_url(eco_system: str) -> str:
-        repo_list_url = None
-        _logger.info("Eco-System to Track {eco}".format(eco=eco_system))
-        if eco_system == 'openshift':
-            repo_list_url = cc.GOKUBE_REPO_LIST
-        elif eco_system == 'knative':
-            repo_list_url = cc.KNATIVE_REPO_LIST
-        elif eco_system == 'kubevirt':
-            repo_list_url = cc.KUBEVIRT_REPO_LIST
-        return repo_list_url
-
     @classmethod
     def _get_bq_client(cls, bq_credentials_path):
+        """
+        Create BQ client object and return it
+        """
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS',
                                                                       bq_credentials_path or '')
         return bq_client_helper.create_github_bq_client()
 
     @staticmethod
     def _get_query_date_range(no_of_days):
+        """
+        Get date range based on no_of_days passed
+        """
         # Don't change this
         present_time = arrow.now()
 
@@ -86,8 +84,10 @@ class BigQueryDataCollector:
         last_n_days = [dt.format('YYYYMMDD') for dt in arrow.Arrow.range('day', start_time, end_time)]
         return last_n_days, start_time, end_time
 
-    # TODO - We are hardcoding 'golang' as ecosystem, need to figure out how we can set differnt eco systems
     def _get_gh_event_as_data_frame(self, query_param: Dict) -> pd.DataFrame:
+        """
+        Using big query get github archived data as panda dataframe
+        """
         event_query = r"""
         SELECT
             repo.name as repo_name,
@@ -146,21 +146,24 @@ class BigQueryDataCollector:
         return df
 
     def _init_query_param(self, eco_systems: List[str], days: int) -> None:
+        """
+        Init Query Parameters
+        """
         last_n_days = self._get_query_date_range(days)[0]
         repo_names = self._get_repo_list(eco_systems)
 
         # Don't change this
         year_prefix = '20*'
         day_list = [item[2:] for item in last_n_days]
-        import pprint
-        pprint.pprint(day_list)
-        pprint.pprint(year_prefix)
         query_params = {'{year_prefix_wildcard}': year_prefix,
                         '{year_suffix_month_day}': '(' + ', '.join(["'" + d + "'" for d in day_list]) + ')',
                         '{repo_names}': '(' + ', '.join(["'" + r + "'" for r in repo_names]) + ')', }
         self._query_params, self._last_n_days = query_params, last_n_days
 
     def get_gh_event_estimate(self):
+        """
+        Get the estimated cost of query
+        """
         query = """
         SELECT  type as EventType, count(*) as Freq
                 FROM `githubarchive.day.{year_prefix_wildcard}`
@@ -211,12 +214,11 @@ class BigQueryDataCollector:
         Update ecosystem based on repo_name
         """
         eco_system = []
-        if repo_name in self._golang_repo:
-            eco_system.append('golang')
-        if repo_name in self._knative_repo:
-            eco_system.append('knative')
-        if repo_name in self._kubevirt_repo:
-            eco_system.append('kubevirt')
+
+        eco_with_repo = [x for x in self._repo_list if repo_name in x['repo-names']]
+        for item in eco_with_repo:
+            eco_system.append(item['eco-system'])
+
         return ",".join(eco_system)
 
     def save_data_to_object_store(self, data_frame, days_since_yday):

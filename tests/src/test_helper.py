@@ -1,26 +1,26 @@
-import os
-
 import src.utils.bq_client_helper as bq_client_helper
 
 
-def get_file_absolute_path(relative_path):
-    working_dir = os.path.abspath(os.getcwd())
-    absolute_file_path = os.path.join(working_dir, relative_path)
-    return absolute_file_path
-
-
 def get_sample_repo_names():
-    sample_file_path = get_file_absolute_path("tests/src/utils/data_assets/golang-repo-list.txt")
-    repo_names = bq_client_helper.get_gokube_trackable_repos(sample_file_path)
-    return repo_names
+    """
+    Return sample repo list added as openshift repos
+    """
+    eco_with_repo_list = bq_client_helper.get_eco_system_with_repo_list()
+    return next(obj for obj in eco_with_repo_list if obj['eco-system'] == 'openshift')['repo-names']
 
 
 def read_file_data(file_path):
+    """
+    Read file and return content
+    """
     with open(file_path) as file:
         return file.read()
 
 
 def get_sample_query_param():
+    """
+    Build sample query param used in BigQueryDataCollector class
+    """
     repo_names = get_sample_repo_names()
     day_list = ['200303', '200304']
     year_prefix = '20*'
