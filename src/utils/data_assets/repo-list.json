@@ -1,6 +1,6 @@
 [
   {
-    "eco-system": "openshift",
+    "ecosystem": "openshift",
     "urls": [
       "https://github.com/urfave/cli",
       "https://github.com/mreiferson/go-httpclient",
@@ -856,7 +856,7 @@
     ]
   },
   {
-    "eco-system": "knative",
+    "ecosystem": "knative",
     "urls": [
       "https://github.com/nats-io/gnatsd",
       "https://github.com/rogpeppe/go-internal",
@@ -1007,7 +1007,7 @@
     ]
   },
   {
-    "eco-system": "kubevirt",
+    "ecosystem": "kubevirt",
     "urls": [
       "cloud.google.com/go",
       "github.com/Azure/go-autorest ",

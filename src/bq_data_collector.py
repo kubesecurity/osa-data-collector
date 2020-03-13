@@ -1,4 +1,3 @@
-import itertools
 import logging
 import os
 import warnings
@@ -19,31 +18,32 @@ _logger = daiquiri.getLogger(__name__)
 
 
 class BigQueryDataCollector:
-    def __init__(self, repos: List[str], bq_credentials_path: str = '', days: int = 3):
+    def __init__(self, ecosystems: List[str], bq_credentials_path: str = '', days: int = 3):
         self._bq_client = BigQueryDataCollector._get_bq_client(bq_credentials_path)
-        self._repo_list = bq_client_helper.get_eco_system_with_repo_list()
-        self._init_query_param(repos, days)
+        self._repo_list = bq_client_helper.get_eco_system_with_repo_list(cc.REPO_LIST)
+        self._init_query_param(ecosystems, days)
 
     def _get_repo_by_eco_system(self, eco_system: str) -> List[str]:
         """
-        Get repo names based on eco-system
+        Get repo names based on ecosystem
         """
-        if any(x['eco-system'] == eco_system for x in self._repo_list):
-            return next(obj for obj in self._repo_list if obj['eco-system'] == eco_system)['repo-names']
+        if eco_system in self._repo_list:
+            return self._repo_list[eco_system]
         else:
-            msg = 'Given eco-system "{eco}" is not supported'.format(eco=eco_system)
+            msg = 'Given ecosystem "{eco}" is not supported'.format(eco=eco_system)
             _logger.error(msg)
             return []
 
-    def _get_repo_list(self, eco_systems: List[str]) -> List[str]:
+    def _get_repo_list(self, eco_systems: List[str]) -> set:
         """
         Get Repo list based on eco system passed
         """
-        repo_names = list()
+        repo_names = set()
         for eco_system in eco_systems:
             _logger.info("Ecosystem to track: {eco}".format(eco=eco_system))
-            repo_names.append(self._get_repo_by_eco_system(eco_system))
-        return list(itertools.chain(*repo_names))
+            repo_names.update(self._get_repo_by_eco_system(eco_system))
+
+        return repo_names
 
     @classmethod
     def _get_bq_client(cls, bq_credentials_path):
@@ -201,9 +201,9 @@ class BigQueryDataCollector:
         data_frame = pd.concat([issues_df, prs_df], axis=0, sort=False, ignore_index=True).reset_index(drop=True)
         data_frame = data_frame[cols]
 
-        # update eco-system
+        # update ecosystem
         if not data_frame.empty:
-            _logger.info('Updating eco-system')
+            _logger.info('Updating ecosystem')
             data_frame['ecosystem'] = data_frame.apply(lambda x: self._update_eco_system(x['repo_name']),
                                                        axis=1)
 
@@ -213,13 +213,9 @@ class BigQueryDataCollector:
         """
         Update ecosystem based on repo_name
         """
-        eco_system = []
+        filtered_dict = {k: v for (k, v) in self._repo_list.items() if repo_name in v}
 
-        eco_with_repo = [x for x in self._repo_list if repo_name in x['repo-names']]
-        for item in eco_with_repo:
-            eco_system.append(item['eco-system'])
-
-        return ",".join(eco_system)
+        return ",".join(filtered_dict.keys())
 
     def save_data_to_object_store(self, data_frame, days_since_yday):
         """

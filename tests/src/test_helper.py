@@ -5,8 +5,8 @@ def get_sample_repo_names():
     """
     Return sample repo list added as openshift repos
     """
-    eco_with_repo_list = bq_client_helper.get_eco_system_with_repo_list()
-    return next(obj for obj in eco_with_repo_list if obj['eco-system'] == 'openshift')['repo-names']
+    eco_with_repo_list = bq_client_helper.get_eco_system_with_repo_list('tests/src/utils/data_assets/repo-list.json')
+    return eco_with_repo_list['openshift']
 
 
 def read_file_data(file_path):

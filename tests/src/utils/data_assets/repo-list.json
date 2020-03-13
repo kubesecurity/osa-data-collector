@@ -1,6 +1,6 @@
 [
   {
-    "eco-system": "openshift",
+    "ecosystem": "openshift",
     "urls": [
       "https://github.com/apache/thrift",
       "https://github.com/square/go-jose",
@@ -10,7 +10,7 @@
     ]
   },
   {
-    "eco-system": "knative",
+    "ecosystem": "knative",
     "urls": [
       "https://github.com/eapache/queue",
       "https://github.com/go-kit/kit",
@@ -18,7 +18,7 @@
     ]
   },
   {
-    "eco-system": "kubevirt",
+    "ecosystem": "kubevirt",
     "urls": [
       "github.com/elazarl/goproxy",
 	  "github.com/Shopify/sarama"

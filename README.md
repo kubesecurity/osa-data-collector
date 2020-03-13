@@ -113,7 +113,7 @@ You can run data-collector program using following command.
 python run_data_collector.py -e openshift knative kubevirt -d 1
 ```
 Command contains two parameters. 
-* -e : The eco-systems to monitor. Options available for now  are [openshift knative kubevirt]
+* -e : The ecosystems to monitor. Options available for now  are [openshift knative kubevirt]
 * -d : The number of days data to retrieve from GitHub including yesterday
 
 ### Run Unit Test Cases

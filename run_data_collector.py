@@ -25,15 +25,15 @@ def main():
                                         The -days flag should be used with number of prev days data you want to pull
                                         '''))
 
-    parser.add_argument('-e', '--eco-systems', metavar='N', type=str, nargs='+', default="openshift",
-                        choices=["openshift", "knative", "kubevirt"], help="The eco-systems to monitor")
+    parser.add_argument('-e', '--ecosystems', metavar='N', type=str, nargs='+', default="openshift",
+                        choices=["openshift", "knative", "kubevirt"], help="The ecosystems to monitor")
     parser.add_argument('-d', '--days-since-yday', type=int, default=7,
                         help='The number of days data to retrieve from GitHub including yesterday')
 
     args = parser.parse_args()
 
     bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
-                                              repos=args.eco_systems, days=args.days_since_yday)
+                                              ecosystems=args.ecosystems, days=args.days_since_yday)
     _logger.info('Data will be retrieved for Last N={n} days: {days}'.format(n=len(bq_data_collector.last_n_days),
                                                                              days=bq_data_collector.last_n_days))
 
