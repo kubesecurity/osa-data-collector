@@ -33,7 +33,8 @@ def main():
     args = parser.parse_args()
 
     bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
-                                              ecosystems=args.ecosystems, days=args.days_since_yday)
+                                              ecosystems=args.ecosystems, repo_list_url=cc.REPO_LIST,
+                                              days=args.days_since_yday)
     _logger.info('Data will be retrieved for Last N={n} days: {days}'.format(n=len(bq_data_collector.last_n_days),
                                                                              days=bq_data_collector.last_n_days))
 

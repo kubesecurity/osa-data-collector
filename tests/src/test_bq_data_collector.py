@@ -19,6 +19,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
            return_value=pd.read_csv('tests/src/utils/data_assets/sample_gh_pr_data.csv'))
     def test_get_github_data(self, _mock_bq_client, _mock_issue, _mock_prs):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift", "knative", "kubevirt"], days=2)
 
         df = bq_data_collector.get_github_data()
@@ -38,6 +39,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
            return_value=pd.read_csv('tests/src/utils/data_assets/empty_gh_issue_data.csv'))
     def test_get_github_data_empty_response(self, _mock_bq_client, _mock_issue, _mock_prs):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift"], days=2)
 
         df = bq_data_collector.get_github_data()
@@ -53,6 +55,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
             'tests/src/utils/data_assets/sample_gh_issue_data_with_duplicate.csv')
         sample_query_param = test_helper.get_sample_query_param()
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift"], days=2)
         # call actual method
         df = bq_data_collector._get_gh_event_as_data_frame(sample_query_param)
@@ -67,6 +70,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
     def test_get_repo_by_list(self, _mock_bq_client):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift"], days=2)
         repo_list = bq_data_collector._get_repo_by_eco_system('openshift')
         # as 2 repo url are invalid inside for openshift repos, we will get 2 valid url out of 5 total url
@@ -80,6 +84,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
     @patch('src.utils.bq_client_helper.create_github_bq_client', return_value=MagicMock())
     def test_get_repo_by_eco_system_invalid_name(self, _mock_bq_client):
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift"], days=2)
 
         repo = bq_data_collector._get_repo_by_eco_system('invalid-repo')
@@ -89,6 +94,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
     def test_init_query_param(self, _mock_bq_client):
         no_of_days = 2
         bq_data_collector = BigQueryDataCollector(bq_credentials_path=cc.BIGQUERY_CREDENTIALS_FILEPATH,
+                                                  repo_list_url=cc.REPO_LIST,
                                                   ecosystems=["openshift"], days=no_of_days)
         present_time = arrow.now()
         start_time = present_time.shift(days=-no_of_days)

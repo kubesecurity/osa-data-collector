@@ -18,9 +18,9 @@ _logger = daiquiri.getLogger(__name__)
 
 
 class BigQueryDataCollector:
-    def __init__(self, ecosystems: List[str], bq_credentials_path: str = '', days: int = 3):
+    def __init__(self, ecosystems: List[str], bq_credentials_path: str = '', repo_list_url: str = '', days: int = 3):
         self._bq_client = BigQueryDataCollector._get_bq_client(bq_credentials_path)
-        self._repo_list = bq_client_helper.get_eco_system_with_repo_list(cc.REPO_LIST)
+        self._repo_list = bq_client_helper.get_eco_system_with_repo_list(repo_list_url)
         self._init_query_param(ecosystems, days)
 
     def _get_repo_by_eco_system(self, eco_system: str) -> List[str]:
