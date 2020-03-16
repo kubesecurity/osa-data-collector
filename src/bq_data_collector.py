@@ -155,9 +155,11 @@ class BigQueryDataCollector:
         # Don't change this
         year_prefix = '20*'
         day_list = [item[2:] for item in last_n_days]
+        month_days = '({days})'.format(days=', '.join(["'" + d + "'" for d in day_list]))
+        repo_names = '({repo_names})'.format(repo_names=', '.join(["'" + r + "'" for r in repo_names]))
         query_params = {'{year_prefix_wildcard}': year_prefix,
-                        '{year_suffix_month_day}': '(' + ', '.join(["'" + d + "'" for d in day_list]) + ')',
-                        '{repo_names}': '(' + ', '.join(["'" + r + "'" for r in repo_names]) + ')', }
+                        '{year_suffix_month_day}': month_days,
+                        '{repo_names}': repo_names}
         self._query_params, self._last_n_days = query_params, last_n_days
 
     def get_gh_event_estimate(self):

@@ -90,7 +90,7 @@ class BigDataCollectorTestCase(unittest.TestCase):
         start_time = present_time.shift(days=-self._no_of_days)
         end_time = present_time.shift(days=-1)
         last_n_days = [dt.format('YYYYMMDD') for dt in arrow.Arrow.range('day', start_time, end_time)]
-        day_list = '(' + ', '.join(["'" + d + "'" for d in [item[2:] for item in last_n_days]]) + ')'
+        day_list = '({days})'.format(days=', '.join(["'" + d + "'" for d in [item[2:] for item in last_n_days]]))
 
         # test init logic by comparing _last_n_days and _query_params
         self.assertEqual(2, len(self._bq_data_collector._last_n_days))

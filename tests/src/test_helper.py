@@ -24,8 +24,10 @@ def get_sample_query_param():
     repo_names = get_sample_repo_names()
     day_list = ['200303', '200304']
     year_prefix = '20*'
+    month_days = '({days})'.format(days=', '.join(["'" + d + "'" for d in day_list]))
+    repo_names = '({repo_names})'.format(repo_names=', '.join(["'" + r + "'" for r in repo_names]))
     query_params = {'{year_prefix_wildcard}': year_prefix,
-                    '{year_suffix_month_day}': '(' + ', '.join(["'" + d + "'" for d in day_list]) + ')',
-                    '{repo_names}': '(' + ', '.join(["'" + r + "'" for r in repo_names]) + ')',
+                    '{year_suffix_month_day}': month_days,
+                    '{repo_names}': repo_names,
                     '{payload_field_name}': 'issue', '{event_type}': 'IssuesEvent'}
     return query_params
