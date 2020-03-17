@@ -1,0 +1,27 @@
+[
+  {
+    "ecosystem": "openshift",
+    "urls": [
+      "https://github.com/apache/thrift",
+      "https://github.com/square/go-jose",
+      "https://github.com/golang/go",
+      "https://invalid.com/crewjam/rfc5424",
+      "https://abc.com/xyz"
+    ]
+  },
+  {
+    "ecosystem": "knative",
+    "urls": [
+      "https://github.com/eapache/queue",
+      "https://github.com/go-kit/kit",
+      "https://github.com/golang/go"
+    ]
+  },
+  {
+    "ecosystem": "kubevirt",
+    "urls": [
+      "github.com/elazarl/goproxy",
+	  "github.com/Shopify/sarama"
+    ]
+  }
+]
