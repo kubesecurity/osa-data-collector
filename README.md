@@ -125,3 +125,25 @@ If you want to run test case for a single file, you can do something like below 
 ```bash
 python -m unittest tests/src/utils/test_bq_client_helper.py 
 ```
+
+
+### Retrive GO repository and dependancies
+Written a script which can help to retrieve GO repo as well as 1st level dependencies from github repo. The code for the same can be found in `tools` folder. 
+```bash
+cd tools
+```
+Install python dependencies using following command. 
+```bash
+pip install -r requirements.txt 
+```
+Do the required configuration inside `retrive_go_repos.py` file, description can be found in the file. 
+```bash
+GITHUB_ACCESS_TOKEN = ""
+REPO_UPDATED_WITHIN_N_DAYS = None
+ORGANIZATION = "kubevirt"
+```
+Run the python file which will generate `combined_list.json` file, you can use the same to update repo-list.
+```bash
+python retrive_go_repos.py
+```
+

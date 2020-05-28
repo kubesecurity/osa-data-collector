@@ -161,11 +161,11 @@ def get_dependancy_data(org_repo: str):
     After anlysing few repos, we came up with below logic to get dependant github repos for a repo.
 
     if go.mod file present in the repo:
-        then we are taking dependant go pkg mentioned into require space.
+        then we are taking dependant go packages mentioned into require space.
     else if Gopkg.lock file present in the repo:
-        then we are taking all the dependant pakages mentioned into that file.
-    else if If Vendor folder present inside reepo:
-        then we are taking deepedancy packages based on sub-folder stracture.
+        then we are taking all the dependant packages mentioned into that file.
+    else if If Vendor folder present inside repo:
+        then we are taking dependency packages based on sub-folder structure.
 
     Note:  Tried to use asyncio for parallel execution but we are facing issue with pkg.go.dev url,
     as its limitting no of request,  so removed that code.
