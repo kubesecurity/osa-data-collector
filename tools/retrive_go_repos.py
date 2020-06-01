@@ -36,6 +36,19 @@ repo_urls = []
 dependancy_urls = []
 
 
+def get_raw_urls():
+    """Get different raw urls used in entire logic as dictionary."""
+    return {
+        'pkg_overview_url' : 'https://pkg.go.dev/{pkg}?tab=overview',
+        'repo_details_url' : 'https://api.github.com/repos/{org_repo}',
+        'go_mod_file_url' : 'https://raw.githubusercontent.com/{org_repo}/master/go.mod',
+        'gopkg_lock_file_url' : 'https://raw.githubusercontent.com/{org_repo}/master/Gopkg.lock',
+        'repo_commit_url' : 'https://api.github.com/repos/{org_repo}/commits/master',
+        'repo_structure_url' : 'https://api.github.com/repos/{org_repo}/git/trees/{sha}',
+        'org_repo_url' : 'https://api.github.com/orgs/{org}/repos?per_page=100&page={page_no}'
+    }
+
+
 def check_repo_updated_date(date: str) -> bool:
     """Validate repo's updated date."""
     if REPO_UPDATED_WITHIN_N_DAYS is None:
@@ -47,7 +60,7 @@ def check_repo_updated_date(date: str) -> bool:
 
 def get_go_pkg_data(pkg: str):
     """Get go package info."""
-    raw_url = "https://pkg.go.dev/{pkg}?tab=overview"
+    raw_url = get_raw_urls().get('pkg_overview_url')
     url = raw_url.format(pkg=pkg)
     return requests.get(url)
 
@@ -90,7 +103,7 @@ def is_valid_repo(item) -> bool:
 
 def get_repo_details(org_repo: str):
     """Get github repo details."""
-    url = "https://api.github.com/repos/{org_repo}".format(org_repo=org_repo)
+    url =  get_raw_urls().get('repo_details_url').format(org_repo=org_repo)
     try:
         result = requests.get(url, headers={'Authorization': 'Bearer {token}'.format(token=GITHUB_ACCESS_TOKEN)})
         if result.status_code == 200:
@@ -110,7 +123,7 @@ def remove_unwanted_chars(line) -> str:
 
 def get_dependancy_data_from_go_mod_file(org_repo: str):
     """Get Dependancy repo details from go.mod file."""
-    content_raw_url = "https://raw.githubusercontent.com/{org_repo}/master/go.mod".format(org_repo=org_repo)
+    content_raw_url =  get_raw_urls().get('go_mod_file_url').format(org_repo=org_repo)
     dependancy_section_started = False
     dependancy_section_ended = False
 
@@ -133,7 +146,7 @@ def get_dependancy_data_from_go_mod_file(org_repo: str):
 
 def get_dependancy_data_from_lock_file(org_repo: str):
     """Get Dependancy repo details from Gopkg.lock file."""
-    content_raw_url = "https://raw.githubusercontent.com/{org_repo}/master/Gopkg.lock".format(org_repo=org_repo)
+    content_raw_url = get_raw_urls().get('gopkg_lock_file_url').format(org_repo=org_repo)
     for line in urlopen(content_raw_url):
         str_line = remove_unwanted_chars(line)
         if str_line.startswith('name = '):
@@ -181,7 +194,7 @@ def get_dependancy_data(org_repo: str):
 
 def get_commit_sha(org_repo: str):
     """Get commit sha for a github repo."""
-    commit_raw_url = "https://api.github.com/repos/{org_repo}/commits/master"
+    commit_raw_url = get_raw_urls().get('repo_commit_url')
     url = commit_raw_url.format(org_repo=org_repo)
     try:
         result = requests.get(url, headers={'Authorization': 'Bearer {token}'.format(token=GITHUB_ACCESS_TOKEN)})
@@ -197,7 +210,7 @@ def get_commit_sha(org_repo: str):
 
 def get_vendor_folder_git_tree_url(org_repo: str, sha: str):
     """Get vendor folder git tree url."""
-    repo_structure_raw_url = "https://api.github.com/repos/{org_repo}/git/trees/{sha}"
+    repo_structure_raw_url = get_raw_urls().get('repo_structure_url')
     url = repo_structure_raw_url.format(org_repo=org_repo, sha=sha)
 
     try:
@@ -239,10 +252,8 @@ def get_dependancy_repo_from_vendor(git_tree_url: str, level: int, path: str):
 
 def save_data_into_file():
     """Save data into different json files."""
-    distinct_repo_urls = list(dict.fromkeys(repo_urls))
-    distinct_dependancy_urls = list(dict.fromkeys(dependancy_urls))
-    distinct_repo_urls.sort()
-    distinct_dependancy_urls.sort()
+    distinct_repo_urls = sorted(set(repo_urls))
+    distinct_dependancy_urls =  sorted(set(dependancy_urls))
 
     # Serializing json and writing to a file
     json_object = json.dumps(distinct_repo_urls, indent=4)
@@ -256,8 +267,7 @@ def save_data_into_file():
 
     # combine repo_urls and dependancy_urls
     combined_list = distinct_repo_urls + distinct_dependancy_urls
-    combined_list = list(dict.fromkeys(combined_list))
-    combined_list.sort()
+    combined_list = sorted(set(combined_list))
 
     # Serializing json and writing to a file
     json_object = json.dumps(combined_list, indent=4)
@@ -278,7 +288,7 @@ def main():
 
     while do_next_call:
 
-        raw_url = "https://api.github.com/orgs/{org}/repos?per_page=100&page={page_no}"
+        raw_url = get_raw_urls().get('org_repo_url')
         url = raw_url.format(org=ORGANIZATION, page_no=page_no)
         data = requests.get(url, headers={'Authorization': 'Bearer {token}'.format(token=GITHUB_ACCESS_TOKEN)})
         logging.info("Github url: {url}, No of records : {count}".format(url=url, count=len(data.json())))
